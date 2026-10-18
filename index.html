@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phoenix-DRX — 免费开源的 SPT 存档编辑器</title>
+<meta name="description" content="Phoenix-DRX：免费开源的 SPT 4.0.x 存档编辑器，暗黑沉浸界面，可视化编辑角色、装备、藏身处、任务与商人。写入前自动备份，支持应用内自动更新。">
+<style>
+:root {
+  /* 视觉 token 单一来源：docs/design/视觉基线.md 第三节（2026-10-17 换版） */
+  --phx-win-bg: #09090b;
+  --phx-surface: #101013;
+  --phx-surface-2: #16161a;
+  --phx-fill-tertiary: rgba(255,255,255,.05);
+  --phx-fill-quaternary: rgba(255,255,255,.08);
+  --phx-fill-secondary: rgba(255,255,255,.14);
+  --phx-glass: rgba(22,22,26,.72);
+  --phx-sep: rgba(255,255,255,.08);
+  --phx-sep-strong: rgba(255,255,255,.14);
+  --phx-text: rgba(255,255,255,.92);
+  --phx-text-2: rgba(235,235,245,.6);
+  --phx-text-3: rgba(235,235,245,.3);
+  --phx-accent: #0091ff;
+  --phx-accent-dim: rgba(0,145,255,.16);
+  --phx-warn: #ffc860;
+  --phx-warn-bg: rgba(255,159,10,.10);
+  --phx-warn-bd: rgba(255,159,10,.32);
+  --phx-green: #30d158;
+  --phx-orange: #a78bfa;
+  --phx-orange-dim: rgba(167,139,250,.16);
+  --phx-yellow: #c4b5fd;
+  --phx-r-win: 12px;
+  --phx-r-card: 12px;
+  --phx-r-btn: 8px;
+  --phx-shadow-win: 0 8px 24px rgba(0,0,0,.25), 0 0 0 .5px rgba(255,255,255,.1);
+  --phx-scrollbar-w: 4px;
+  --phx-font-sans: -apple-system, 'SF Pro Text', 'Segoe UI Variable', 'Segoe UI', 'Microsoft YaHei UI', sans-serif;
+  --phx-font-mono: ui-monospace, Consolas, monospace;
+  --phx-font-brand: fantasy;
+  --phx-dur-fast: 150ms;
+  --phx-dur-norm: 300ms;
+  --phx-dur-slow: 500ms;
+  --phx-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --phx-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --phx-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--phx-win-bg);
+  color: var(--phx-text);
+  font-family: var(--phx-font-sans);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: rgba(0,145,255,.35); }
+
+::-webkit-scrollbar { width: var(--phx-scrollbar-w); height: var(--phx-scrollbar-w); }
+::-webkit-scrollbar-thumb { background: var(--phx-sep-strong); border-radius: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+a { color: inherit; text-decoration: none; }
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+/* ── 导航条 ─────────────────────────────── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  background: var(--phx-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 0.5px solid var(--phx-sep);
+}
+.nav-inner {
+  max-width: 1080px; margin: 0 auto; padding: 0 24px;
+  height: 60px; display: flex; align-items: center; justify-content: space-between;
+}
+.nav-brand {
+  font-family: var(--phx-font-brand); font-style: italic; font-weight: 700;
+  font-size: 19px; letter-spacing: .5px;
+  background: linear-gradient(120deg, var(--phx-orange), var(--phx-yellow));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.nav-links { display: flex; gap: 28px; }
+.nav-links a {
+  font-size: 14px; color: var(--phx-text-2);
+  transition: color var(--phx-dur-fast) var(--phx-ease-out);
+}
+.nav-links a:hover { color: var(--phx-text); }
+.nav-links a:focus-visible { outline: 2px solid var(--phx-accent); outline-offset: 4px; border-radius: 4px; }
+.nav-cta {
+  padding: 7px 16px; border-radius: var(--phx-r-btn);
+  background: var(--phx-accent); color: #fff; font-size: 14px; font-weight: 600;
+  transition: transform var(--phx-dur-fast) var(--phx-ease-out), filter var(--phx-dur-fast) var(--phx-ease-out);
+}
+.nav-cta:hover { filter: brightness(1.12); }
+.nav-cta:active { transform: scale(.96); }
+.nav-cta:focus-visible { outline: 2px solid var(--phx-text); outline-offset: 3px; }
+
+/* ── Hero ───────────────────────────────── */
+.hero {
+  position: relative;
+  padding: 168px 0 120px;
+  text-align: center;
+  overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(560px 320px at 50% 8%, rgba(167,139,250,.10), transparent 70%),
+    radial-gradient(720px 420px at 50% 105%, rgba(0,145,255,.06), transparent 70%);
+}
+.hero > * { position: relative; }
+.badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 999px;
+  background: var(--phx-orange-dim);
+  border: 0.5px solid var(--phx-sep-strong);
+  font-size: 12.5px; color: var(--phx-yellow);
+  animation: rise var(--phx-dur-slow) var(--phx-ease-out) both;
+}
+.badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--phx-green); }
+.hero h1 {
+  margin: 28px 0 0;
+  font-size: clamp(40px, 6.5vw, 64px);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.5px;
+  animation: rise var(--phx-dur-slow) var(--phx-ease-out) .08s both;
+}
+.hero h1 .brand {
+  font-family: var(--phx-font-brand); font-style: italic; letter-spacing: 0;
+  background: linear-gradient(120deg, var(--phx-orange) 20%, var(--phx-yellow) 80%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero .sub {
+  margin: 22px auto 0; max-width: 640px;
+  font-size: 19px; color: var(--phx-text-2);
+  animation: rise var(--phx-dur-slow) var(--phx-ease-out) .16s both;
+}
+.hero .sub .mono { font-family: var(--phx-font-mono); font-size: 15px; color: var(--phx-text-3); }
+.hero-actions {
+  margin-top: 44px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  animation: rise var(--phx-dur-slow) var(--phx-ease-out) .24s both;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 13px 28px; border-radius: var(--phx-r-btn);
+  font-size: 15.5px; font-weight: 600;
+  transition: transform var(--phx-dur-fast) var(--phx-ease-out),
+              filter var(--phx-dur-fast) var(--phx-ease-out),
+              background var(--phx-dur-fast) var(--phx-ease-out);
+}
+.btn:active { transform: scale(.96); }
+.btn:focus-visible { outline: 2px solid var(--phx-text); outline-offset: 3px; }
+.btn-primary { background: var(--phx-accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.12); }
+.btn-ghost { background: var(--phx-fill-tertiary); color: var(--phx-text); border: 0.5px solid var(--phx-sep-strong); }
+.btn-ghost:hover { background: var(--phx-fill-quaternary); }
+.btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.hero-meta {
+  margin-top: 30px; font-size: 13px; color: var(--phx-text-3);
+  animation: rise var(--phx-dur-slow) var(--phx-ease-out) .32s both;
+}
+.hero-meta .sep { margin: 0 10px; color: var(--phx-sep-strong); }
+.hero-meta .os { display: inline-flex; align-items: center; gap: 5px; }
+.hero-meta .os svg { width: 13px; height: 13px; fill: currentColor; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── 区块通用 ───────────────────────────── */
+.section { padding: 96px 0; }
+.section + .section { border-top: 0.5px solid var(--phx-sep); }
+.sec-head { text-align: center; margin-bottom: 52px; }
+.sec-head h2 { font-size: clamp(26px, 4vw, 34px); font-weight: 700; letter-spacing: -0.3px; }
+.sec-head p { margin-top: 12px; font-size: 15.5px; color: var(--phx-text-2); }
+
+/* ── 特性 8 卡 ──────────────────────────── */
+.features-grid {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.card {
+  padding: 24px 22px;
+  background: var(--phx-surface);
+  border: 0.5px solid var(--phx-sep);
+  border-radius: var(--phx-r-card);
+  transition: transform var(--phx-dur-norm) var(--phx-ease-out),
+              border-color var(--phx-dur-norm) var(--phx-ease-out);
+}
+.card:hover { transform: translateY(-2px); border-color: var(--phx-sep-strong); }
+.card .ico {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--phx-accent-dim);
+}
+.card .ico svg { width: 20px; height: 20px; stroke: var(--phx-accent); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.card h3 { margin-top: 16px; font-size: 16px; font-weight: 600; }
+.card p { margin-top: 8px; font-size: 13.5px; line-height: 1.65; color: var(--phx-text-2); }
+
+/* ── 下载区 ─────────────────────────────── */
+.dl-panel {
+  max-width: 640px; margin: 0 auto; text-align: center;
+  padding: 44px 36px;
+  background: var(--phx-surface-2);
+  border: 0.5px solid var(--phx-sep-strong);
+  border-radius: var(--phx-r-win);
+  box-shadow: var(--phx-shadow-win);
+}
+.dl-panel .ver { font-size: 13px; color: var(--phx-text-3); font-family: var(--phx-font-mono); }
+.dl-panel h3 { margin-top: 10px; font-size: 22px; font-weight: 700; }
+.dl-panel .dl-actions { margin-top: 28px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.dl-panel .dl-note { margin-top: 22px; font-size: 13px; color: var(--phx-text-3); line-height: 1.8; }
+.dl-panel .dl-note a { color: var(--phx-accent); transition: filter var(--phx-dur-fast) var(--phx-ease-out); }
+.dl-panel .dl-note a:hover { filter: brightness(1.25); }
+.dl-panel .dl-note a:focus-visible { outline: 2px solid var(--phx-accent); outline-offset: 3px; border-radius: 3px; }
+
+/* ── 须知区 ─────────────────────────────── */
+.notes-grid { display: grid; gap: 16px; max-width: 860px; margin: 0 auto; }
+.note-card {
+  padding: 26px 28px;
+  border-radius: var(--phx-r-card);
+  border: 0.5px solid var(--phx-sep);
+  background: var(--phx-surface);
+}
+.note-card h3 { display: flex; align-items: center; gap: 10px; font-size: 16.5px; font-weight: 600; }
+.note-card h3 svg { width: 18px; height: 18px; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.note-card p { margin-top: 10px; font-size: 14px; line-height: 1.8; color: var(--phx-text-2); }
+.note-warn { background: var(--phx-warn-bg); border-color: var(--phx-warn-bd); }
+.note-warn h3 { color: var(--phx-warn); }
+.note-warn h3 svg { stroke: var(--phx-warn); }
+.note-plain h3 { color: var(--phx-text); }
+.note-plain h3 svg { stroke: var(--phx-text-3); }
+
+/* ── 页脚 ───────────────────────────────── */
+.footer {
+  border-top: 0.5px solid var(--phx-sep);
+  padding: 40px 0 48px;
+  text-align: center;
+}
+.footer .f-brand {
+  font-family: var(--phx-font-brand); font-style: italic; font-weight: 700; font-size: 16px;
+  background: linear-gradient(120deg, var(--phx-orange), var(--phx-yellow));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.footer .f-links { margin-top: 18px; display: flex; gap: 26px; justify-content: center; flex-wrap: wrap; }
+.footer .f-links a {
+  font-size: 13.5px; color: var(--phx-text-2);
+  transition: color var(--phx-dur-fast) var(--phx-ease-out);
+}
+.footer .f-links a:hover { color: var(--phx-text); }
+.footer .f-links a:focus-visible { outline: 2px solid var(--phx-accent); outline-offset: 3px; border-radius: 3px; }
+.footer .f-copy { margin-top: 16px; font-size: 12.5px; color: var(--phx-text-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="#top" aria-label="回到页首">Phoenix-DRX</a>
+    <div class="nav-links">
+      <a href="#features">功能</a>
+      <a href="#download">下载</a>
+      <a href="#notes">须知</a>
+      <a class="nav-cta" href="https://github.com/65tiankehan/Phoenix-DRX-releases/releases/latest">下载最新版</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <span class="badge"><span class="dot"></span>v0.1.0 已发布 · 免费开源 · MIT</span>
+  <h1><span class="brand">Phoenix</span>-DRX</h1>
+  <p class="sub">
+    免费开源的 SPT 存档编辑器 —— 暗黑沉浸界面，角色、装备、藏身处、任务、商人，全都能可视化地改。
+    <br><span class="mono">SPT-AKI 4.0.x · Windows x64</span>
+  </p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="https://github.com/65tiankehan/Phoenix-DRX-releases/releases/latest">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16"/></svg>
+      下载 Windows 安装包
+    </a>
+    <a class="btn btn-ghost" href="https://github.com/65tiankehan/Phoenix-DRX-Code">
+      <svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+      GitHub 获取源码
+    </a>
+  </div>
+  <p class="hero-meta">
+    <span class="os"><svg viewBox="0 0 24 24"><path d="M3 5.5l7.5-1v7H3v-6zm0 13l7.5 1v-6.9H3v5.9zM11.6 4.3L21 3v8.5h-9.4V4.3zm0 15.4L21 21v-8.4h-9.4v7.1z"/></svg>Windows 10 / 11</span>
+    <span class="sep">·</span>写入前自动备份
+    <span class="sep">·</span>应用内自动更新
+    <span class="sep">·</span>无激活码 · 无订阅
+  </p>
+</header>
+<section class="section" id="features">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>它能做什么</h2>
+      <p>对着 4.0.1 参考编辑器的功能全集做的，常用能力一项不缺。</p>
+    </div>
+    <div class="features-grid">
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg></div>
+        <h3>可视化档案管理</h3>
+        <p>打开 SPT 用户存档即可浏览全部内容，树状结构一目了然，不需要碰任何文件。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg></div>
+        <h3>角色与装备编辑</h3>
+        <p>等级、经验、金钱、血量上限直接改；背包、装备槽位、武器配件都能可视化管理。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5M5 9.5V21h14V9.5M9 21v-6h6v6"/></svg></div>
+        <h3>藏身处与仓库</h3>
+        <p>藏身处等级与各区域建设进度、仓库物品清单与数量，全部可视化调整。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></div>
+        <h3>任务与商人</h3>
+        <p>任务完成状态、商人好感度与解锁等级，改起来就是点几下的事。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg></div>
+        <h3>Scav 与预设</h3>
+        <p>Scav 角色独立编辑，装备预设（Builds）可查看、复制与导入，配枪方案随取随用。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>写入前自动备份</h3>
+        <p>每次保存前自动生成带时间戳的备份，改坏了随时回滚，不会一失手就丢档。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 10-2.3 5.6M20 12v-5m0 5h-5"/></svg></div>
+        <h3>应用内自动更新</h3>
+        <p>启动时静默检查新版本，有更新弹薄窗一键升级，不用再手动下安装包覆盖。</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 5l-2 14"/></svg></div>
+        <h3>开源免费</h3>
+        <p>MIT 协议开源，没有激活码、没有订阅、没有有效期，代码就在 GitHub 上。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="download">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>下载</h2>
+      <p>提供 .exe 与 .msi 两种安装包，装完即用，无需额外依赖。</p>
+    </div>
+    <div class="dl-panel">
+      <p class="ver">v0.1.0 · 2026-10-19 · Windows x64</p>
+      <h3>Phoenix-DRX 0.1.0</h3>
+      <div class="dl-actions">
+        <a class="btn btn-primary" href="https://github.com/65tiankehan/Phoenix-DRX-releases/releases/download/v0.1.0/Phoenix-DRX_0.1.0_x64-setup.exe">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16"/></svg>
+          下载安装包（.exe）
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/65tiankehan/Phoenix-DRX-releases/releases/download/v0.1.0/Phoenix-DRX_0.1.0_x64_en-US.msi">下载 .msi 包</a>
+      </div>
+      <p class="dl-note">
+        更新通道：启动时会自动检查新版本，也可在应用内手动检查。<br>
+        全部历史版本与更新清单见 <a href="https://github.com/65tiankehan/Phoenix-DRX-releases/releases">Releases 页</a>。
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="notes">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>使用须知</h2>
+      <p>两件事，开始前请花一分钟看完。</p>
+    </div>
+    <div class="notes-grid">
+      <div class="note-card note-warn">
+        <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 16H3l9-16z"/><path d="M12 11v4m0 3.5v.01"/></svg>改档前请备份</h3>
+        <p>应用在每次写入前都会自动生成带时间戳的备份文件，改坏了可以回滚。但存档是你的劳动成果，重要档案建议自己也额外留一份副本，双保险。</p>
+      </div>
+      <div class="note-card note-plain">
+        <h3><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5m0 3.5v.01"/></svg>免责声明</h3>
+        <p>Phoenix-DRX 是面向 SPT（单人离线）玩家社区的非官方工具，与 Battlestate Games 官方无关。仅供本地单人离线游戏使用，请遵守 SPT 社区规范；使用本工具产生的任何后果由使用者自行承担。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="wrap">
+    <p class="f-brand">Phoenix-DRX</p>
+    <div class="f-links">
+      <a href="https://github.com/65tiankehan/Phoenix-DRX-Code">源码仓库</a>
+      <a href="https://github.com/65tiankehan/Phoenix-DRX-releases/releases">版本发布</a>
+      <a href="https://github.com/65tiankehan/Phoenix-DRX-Opendata">公告与远程开关</a>
+      <a href="https://github.com/65tiankehan/Phoenix-DRX-Code/issues">问题反馈</a>
+    </div>
+    <p class="f-copy">以 MIT 协议开源 · 免费使用 · © 2026 Phoenix-DRX</p>
+  </div>
+</footer>
+</body>
+</html>
