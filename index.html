@@ -220,6 +220,16 @@ a { color: inherit; text-decoration: none; }
 .dl-panel .dl-note a { color: var(--phx-accent); transition: filter var(--phx-dur-fast) var(--phx-ease-out); }
 .dl-panel .dl-note a:hover { filter: brightness(1.25); }
 .dl-panel .dl-note a:focus-visible { outline: 2px solid var(--phx-accent); outline-offset: 3px; border-radius: 3px; }
+/* 收支对照：投入 vs 回本，一行一项 */
+.ledger { margin-top: 24px; border: 1px solid var(--phx-sep); border-radius: var(--phx-r-card); background: var(--phx-surface); overflow: hidden; }
+.ledger-row { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 16px; padding: 18px 24px; }
+.ledger-row + .ledger-row { border-top: 1px solid var(--phx-sep); }
+.ledger-row .k { font-size: 14px; color: var(--phx-text-2); }
+.ledger-row .v { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; font-family: var(--phx-font-mono, inherit); }
+.ledger-row .v.out { color: var(--phx-text); }
+.ledger-row .v.in { color: var(--phx-warn); }
+.ledger-row .note { grid-column: 1 / -1; margin-top: 4px; font-size: 13px; color: var(--phx-text-3); }
+@media (max-width: 640px) { .ledger-row { grid-template-columns: 1fr; gap: 6px; padding: 16px 18px; } .ledger-row .v { font-size: 22px; } }
 
 /* ── 须知区 ─────────────────────────────── */
 .notes-grid { display: grid; gap: 16px; max-width: 860px; margin: 0 auto; }
@@ -392,6 +402,18 @@ a { color: inherit; text-decoration: none; }
         <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
         <h3>约 9 个月（2026 年 3 月至今）</h3>
         <p>从 3 月 1 日算到今天共 <b>270 天</b>。读 SPT 的数据结构、一屏一屏做界面、每次改动都拿真实存档验证、每版走一遍发版流程；工作日基本是下班后到半夜，周末大半时间也在这里。<b>按每天 3 小时保守估算，累计约 800 小时</b>（实际只多不少）。</p>
+      </div>
+    </div>
+    <div class="ledger">
+      <div class="ledger-row">
+        <span class="k">已经投进去</span>
+        <span class="v out">1,912.21 元</span>
+        <span class="note">现金充值，全部换成模型调用，用于写代码与排查问题。</span>
+      </div>
+      <div class="ledger-row">
+        <span class="k">截至目前收入</span>
+        <span class="v in">0 元</span>
+        <span class="note">没有赞助、没有广告分成、没有付费版，一分钱没收过。以后也不会有付费版。</span>
       </div>
     </div>
     <div class="dl-panel" style="margin-top:24px">
